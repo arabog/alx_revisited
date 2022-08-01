@@ -1,5 +1,3 @@
-EC2: Elastic Compute Cloud - is a service that provides servers for rent in the cloud.
-
 Elastic Block Store (EBS): you can think of EBS as an external hard drive that we attach to the server for additional storage. It helps with data persistence even when a server is terminated mking d data ready available for the next server.
 
 Elastic IP addresses- An Elastic IP address can mask the failure of an instance by remapping the current IP address to another instance in your account.
@@ -46,3 +44,27 @@ Inbound/Outbound rules are numbered and ordered. The lowest numbered rule is eva
 
 Network ACLs are stateless in nature. Assume an inbound request arrived in your subnet. A "response" to the inbound request can only be sent out of the subnet if the outbound rules allow the outgoing traffic to the desired destination. A vice-versa scenario is also possible.
 
+Rule with 0.0.0.0/0 source will allow all IP
+addresses to access your instance.
+
+EC2: Elastic Compute Cloud - is a service that provides servers for rent in the cloud.
+dy r phy server in AWS AZs
+
+Pricing Options
+There are several pricing options for EC2.
+On Demand - Pay as you go, no contract.
+
+Dedicated Hosts - You have your own dedicated hardware and 
+don't share it with others.
+
+Spot - You place a bid on an instance price. If there is 
+extra capacity that falls below your bid, an EC2 instance 
+is provisioned. If the price goes above your bid while the 
+instance is running, the instance is terminated.
+
+Reserved Instances - You earn huge discounts if you pay up front 
+and sign a 1-year or 3-year contract.
+
+
+
+=======================================

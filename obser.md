@@ -65,6 +65,35 @@ instance is running, the instance is terminated.
 Reserved Instances - You earn huge discounts if you pay up front 
 and sign a 1-year or 3-year contract.
 
-
-
 =======================================
+-: Lambda
+AWS Lambda provides you with computing power in the cloud by allowing you 
+to execute code without standing up or managing servers.
+
+The code you run on AWS Lambda is called a “Lambda function.”
+Lambda  is a serverless computing technology
+
+AWS Lambda
+Run code without thinking about servers or clusters
+
+AWS Lambda is a serverless, event-driven compute service that lets you run code for 
+virtually any type of application or backend service without provisioning or managing 
+servers. You can trigger Lambda from over 200 AWS services and software as a service 
+(SaaS) applications, and only pay for what you use.
+
+-: Elastic Beanstalk - is an orchestration service that allows you to deploy a web application 
+at the touch of a button by spinning up (or provisioning) all of the services that you 
+need to run your application.
+
+While launching the environment and deploying EC2 instances to run your application, the following resources get created automatically:
+
+Amazon S3 storage bucket
+A target group in the default VPC
+Multiple security groups
+An autoscaling launch configuration and an autoscaling group
+Multiple EC2 instances
+Multiple CloudWatch alarms
+EC2 load balancer You can even see the logs of each event (success and failure) after the creation of the environment. 
+
+
+

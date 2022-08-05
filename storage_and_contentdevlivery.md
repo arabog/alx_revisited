@@ -84,7 +84,7 @@ CLOUDFRONT CAN ALSO BE USED AS A SECURITY MECHANISM VIA IT PERMISSION SECTION
 NB: CloudFront, after caching, speeds up the delivery of content to your website
 
 Step 1. Create S3 Bucket
-Leave d bucket policy as it is
+Leave d bucket policy as it is(i.e No public access)
 Enable Static website hosting under ppties tab and enter index.html
 
 Step 2. Upload Object to Bucket
@@ -108,9 +108,7 @@ Bucket policy: Yes, update the bucket policy
 Viewer protocol policy: Redirect HTTP to HTTPS
 Leave other as default
 
+Cleanup:
+Delete S3, cloudfront, 
 https://d21nkuqzcxkysp.cloudfront.net/index.html
-========================
-
-
-
 ========================

@@ -109,6 +109,6 @@ Viewer protocol policy: Redirect HTTP to HTTPS
 Leave other as default
 
 Cleanup:
-Delete S3, cloudfront, 
+Delete S3, cloudfront, Origin access identities under security on d left pand
+
 https://d21nkuqzcxkysp.cloudfront.net/index.html
-========================

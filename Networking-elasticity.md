@@ -3,10 +3,8 @@ This is abt letting internet user get access to ur site.
 We'll also discuss tools required to configure and investigate 
 network connectivity.
 
-
 ================================
 -: Why do we need networking in the cloud?
-Networking
 Networks reliably carry loads of data around the globe allowing for 
 the delivery of content and applications with high availability. 
 *The network is the foundation of your infrastructure.*
@@ -25,7 +23,7 @@ DOMAIN NAME SYSTEM(DNS) asks a *domain authority* for d IP
 address of the url, eg google.com, entered into browser.
 
 Domain authority is the service with wc d domain name e.g
-google.com was registered
+google.com was registered on.
 ================================
 -: Route 53: routes end users to Internet applications
 *Route 53 connects user requests to internet applications running 
@@ -93,9 +91,6 @@ specify the configuration details in a Launch template.
 scale your EC2 instances automatically, based on demand
 
 A. Start the Auto Scaling Groups service
-Go to the EC2 Dashboard, and select the Auto Scaling Groups service 
-from the left navigation pane.
-
 Search for Auto Scaling Group in AWS Console
 Click Create Auto Scaling group btn
 
@@ -118,10 +113,7 @@ EC2 instances.
 Let's have a walkthrough of an Auto Scaling Group which has already 
 been created.
 
-A Launch Template specifies instance configuration information, such as, 
-the ID of the Amazon Machine Image (AMI), the instance type, a key pair, 
-security groups, and the other parameters that will be used to launch 
-EC2 instances.
+A Launch Template 
 
 Instance refresh
 An instance refresh allows you to trigger a rolling replacement of all 
@@ -134,10 +126,9 @@ Elastic Load Balancing automatically distributes incoming application
 traffic across multiple servers.
 
 Elastic Load Balancer is a service that:
-
 Balances load between two or more servers
 Stands in front of a web server
-Provides redundancy (if a server is lost, load bal send requests
+Provides redundancy (if a server is lost, load bal split requests
 to other working servers) and performance(if a server is having issues, 
 lb will add more servers to d pool of available servers)
 
@@ -171,7 +162,6 @@ load balancer then redirects the incoming HTTP/HTTP traffic to the
 suitable server based on the rules you specify in the configuration.
 
 If you choose this option, you will be taken to a six-step process:
-
 Configure Load Balancer
 Configure Security Settings
 Configure Security Groups
@@ -238,6 +228,7 @@ Create the first EC2 instance in a public subnet in any one Availability Zone.
 
 Under the Advanced Details → User data section, add the following configuration 
 script to run automatically during launch.
+
 #!/bin/bash
 sudo yum update -y
 sudo amazon-linux-extras install -y lamp-mariadb10.2-php7.2 php7.2
@@ -253,24 +244,26 @@ sudo chgrp -R www /var/www
 sudo chmod 2775 /var/www
 find /var/www -type d -exec sudo chmod 2775 {} +
 find /var/www -type f -exec sudo chmod 0664 {} +
+
 # Create a new PHP file at  /var/www/html/ path
 echo "<?php phpinfo(); ?>" > /var/www/html/phpinfo.php
+
 The script above will install, configure, and launch the Apache webserver 
 on the EC2 instance. You can learn more about the individual steps at 
 Create an EC2 instance and install a web server.
-
 https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_Tutorials.WebServerDB.CreateWebServer.html#CHAP_Tutorials.WebServerDB.CreateWebServer.Apache
 
 
 Keep the storage as default, and use a tag as Name: Server-A
+
 At the Configure Security Group step, you can create a new one, and ensure 
 to have a firewall rule to allow incoming HTTP traffic on port 80.
 
 Type	Protocol	Port	Source
-HTTP	TCP	        80	0.0.0.0/0
+HTTP	TCP	        80	    0.0.0.0/0
 It will allow all IPv4 addresses to access your instance.
 
-SSH	    TCP	        22	0.0.0.0/0
+SSH	    TCP	        22	    0.0.0.0/0
 
 The step above is crucial for the current experiment.
 
@@ -297,6 +290,7 @@ Verify that the Apache server is running successfully on both the EC2
 instances. Simply copy, and paste the public IPv4 address of each instance 
 in a new browser window. If the Apache is configured successfully, you will 
 see the Apache welcome page.
+
 Note: We have opened the HTTP traffic on the default port, therefore the 
 public IPv4 address should be prepended with http://, instead of https://.
 
@@ -341,7 +335,7 @@ Port	        80
 At the Register Targets step, add the two EC2 instances created previously 
 to the target group.
 
-Do not forget to click on the Add to registered button after selecting the 
+Do not forget to click on the `Add to registered button` after selecting the 
 instances from the list.
 
 Leave the remaining things as default, and finish creating the NLB.
@@ -392,15 +386,16 @@ other parameters that you use to launch EC2 instances.
 Go to the Launch templates service, and create a new template by specifying 
 the following parameters:
 Template name, and description of your choice.
+
 Template contents:
-AMI ID: Amazon Linux 2 AMI (HVM), SSD volume type
-Instance type: t2.micro
-Key-pair for logging in to the EC2 instances: Your choice of key-pair
+AMI ID:             Amazon Linux 2 AMI (HVM), SSD volume type
+Instance type:      t2.micro
+Key-pair for logging in to the EC2 instances:       Your choice of key-pair
 Network settings: Choose a Virtual Private Cloud (VPC), and a subnet in which 
 the network interface is located. Choose a security group accordingly, because 
 this step will ensure that a public IP address is assigned automatically to 
 every instance.
-Storage (volumes), tags, and network interfaces: Default
+Storage (volumes), tags, and network interfaces:    Default
 
 
 Stage 2. Create an Autoscaling group

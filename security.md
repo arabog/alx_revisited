@@ -17,7 +17,7 @@ security rules.
 
 WAF can protect websites not hosted in AWS through Cloud Front.
 
-AWS WAF: It allows you to protect your web applications from common web exploits 
+AWS WAF: allows you to protect your web applications from common web exploits 
 by monitoring and controlling the web requests coming to an Amazon API Gateway, 
 an Amazon CloudFront distribution, or an Application Load Balancer.
 
@@ -31,9 +31,9 @@ across accounts and applications centrally.
 Within AWS WAF service, you can create Web access control lists (web ACLs) 
 to monitor HTTP(S) requests for AWS resources. You can protect the following 
 types of resources:
-
 CloudFront distributions
 Regional resources (Application Load Balancer, API Gateway, AWS AppSync)
+
 While creating a web ACL, you add rules, such as conditions like originating 
 IP addresses, that determines whether to allow/block each request.
 

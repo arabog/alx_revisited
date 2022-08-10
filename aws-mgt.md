@@ -1,1 +1,60 @@
 ## Why do we need logging and auditing in the cloud?
+Logging In The Cloud
+Logging provides visibility into your cloud resources and applications.  
+Logging allows you to answer important questions like:  
+How is this server performing?  
+What is the current load on the server?  
+What is the root cause of an application error that a user is seeing?  
+What is the path that leads to this error?  
+
+
+## Cloud Trail
+Cloud Trail allows you to audit (or review) everything that occurs in your AWS account. Cloud Trail does this by recording all the AWS API calls occurring in your account and delivering a log file to you.  
+
+Features  
+CloudTrail provides event history of your AWS account activity, including:  
+who has logged in  
+services that were accessed  
+actions performed  
+parameters for the actions  
+responses returned  
+This includes actions taken through the AWS Management Console, AWS SDKs, command line tools, and other AWS services.  
+
+CloudTrail shows results for the last 90 days.  
+You can create up to five trails in an AWS region.  
+
+## Cloud Watch
+Cloud Watch is a service that monitors resources and applications that run on AWS by collecting data in the form of logs, metrics, and events.  
+
+There are several useful features:  
+Collect and track metrics  
+Collect and monitor log files  
+Set alarms and create triggers to run your AWS resources  
+React to changes in your AWS resources  
+
+Metrics are provided automatically for a number of AWS products and services.  
+
+## What is Infrastructure as Code and why do we need it?
+*Infrastructure as Code*  
+Infrastructure as Code allows you to describe and provision all the infrastructure resources in your cloud environment. You can stand up servers, databases, runtime parameters, resources, etc. based on scripts that you write. Infrastructure as Code is a time-saving feature because it allows you to provision (or stand up) resources in a reproducible way.  
+
+It is the process of managing and provisioning computer data centers through machine-readable definition files, rather than physical hardware configuration or interactive configuration tools
+
+*Cloud Formation*  
+AWS Cloud Formation allows you to model your entire infrastructure in a text file template allowing you to provision AWS resources based on the scripts you write.
+
+Cloud Formation templates are written using JSON or YAML.
+You can still individually manage AWS resources that are part of a CloudFormation stack.
+
+## CloudFormation Designer
+Check on the left hand pane
+AWS CloudFormation Designer is the graphic tool for creating, 
+viewing and modifying AWS Cloudformation templates. You can diagram
+your template resources using drag and drop of the available resources
+in resource types on the left hand pane.
+
+## AWS Command Line Interface (CLI)
+
+
+
+![watch5](watch5.png?raw=true "watch5")

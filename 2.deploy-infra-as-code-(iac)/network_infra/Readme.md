@@ -90,19 +90,186 @@ While running the AWS commands using either create.sh or update.sh file, if you 
 ### Connecting VPC's & Internet Gateways
 Syntax of VPCGatewayAttachment resource: It's important to note when connecting an Internet Gateway to a VPC, we need to define an additional resource called InternetGatewayAttachment. This attachment references both the VPC and the InternetGateway.  
 
+**InternetGatewayAttachment connect both VPC and Internet Gateway together! During the attachement, an IP address called Elastic IP is created wc is required by NAT Gateway to be able to communicate with internet on behalf of private subnets/infrastructural resources.**    
+
+
+```
+Type: AWS::EC2::VPCGatewayAttachment
+Properties: 
+    InternetGatewayId: String
+    VpcId: String
+    VpnGatewayId: String
+```
+
+Note that you must specify either InternetGatewayId or VpnGatewayId, but not both.  
+
+## Subnets
+![n3](n3.png?raw=true "n3")
+
+
+```
+ PrivateSubnet1: 
+      Type: AWS::EC2::Subnet
+      Properties:
+          VpcId: !Ref VPC
+          AvailabilityZone: !Select [ 0, !GetAZs '' ]
+          CidrBlock: !Ref PrivateSubnet1CIDR
+          MapPublicIpOnLaunch: false
+          Tags: 
+              - Key: Name 
+                Value: !Sub ${EnvironmentName} Private Subnet (AZ1)
+
+  PrivateSubnet2: 
+      Type: AWS::EC2::Subnet
+      Properties:
+          VpcId: !Ref VPC
+          AvailabilityZone: !Select [ 1, !GetAZs '' ]
+          CidrBlock: !Ref PrivateSubnet2CIDR
+          MapPublicIpOnLaunch: false
+          Tags: 
+              - Key: Name 
+                Value: !Sub ${EnvironmentName} Private Subnet (AZ2)
+```
+
+Points to notice in the code above:  
+!Ref VPC is referencing to the VPC created earlier.  
+
+!Ref PrivateSubnet1CIDR is referencing to the PrivateSubnet1CIDR parameter. For this parameter, we have already defined the default value as 10.0.2.0/24. Similarly, the PrivateSubnet2CIDR parameter is being used in the above code.  
+
+Notice that our private subnets are not sharing availability zones. We are keeping them separated as we displayed in our diagrams from the previous lesson. To do so, the !GetAZs‘’ function fetches the list of AZs in your region which are indexed 0, 1, etc. Then, the !select [0, !GetAZs‘’] returns only the first AZ.  
+**Az is readily available when you create a VPC within a particular region**  
+
+For PrivateSubnet1, the!Select [ 0, !GetAZs '' ] is returning the first AZ from the list of all AZs in your region. Similarly, for PrivateSubnet2, the !Select [ 1, !GetAZs '' ] will return the second AZ.  
+
+Similar to the private subnets shown above, you will have to create two public subnets each in AZ0 and AZ1, except for the changed value in the field MapPublicIpOnLaunch: true. Marking this field as True will enable the Auto-assign public IP address field of the public subnet.  
+
+## NAT Gateways
+![n4](n4.png?raw=true "n4")
+
+`Generally, we place a NAT gateway in a public subnet to enable the servers in a private subnet to connect to the Internet. And sometimes, we want to prevent the Internet from connecting to the servers in the private subnet`  
+
+```
+ NatGateway1EIP:
+      Type: AWS::EC2::EIP
+      DependsOn: InternetGatewayAttachment
+      Properties: 
+          Domain: vpc
+
+  NatGateway2EIP:
+      Type: AWS::EC2::EIP
+      DependsOn: InternetGatewayAttachment
+      Properties:
+          Domain: vpc
+
+  NatGateway1: 
+      Type: AWS::EC2::NatGateway
+      Properties: 
+          AllocationId: !GetAtt NatGateway1EIP.AllocationId
+          SubnetId: !Ref PublicSubnet1
+
+  NatGateway2: 
+      Type: AWS::EC2::NatGateway
+      Properties:
+          AllocationId: !GetAtt NatGateway2EIP.AllocationId
+          SubnetId: !Ref PublicSubnet2
+```
+
+**You can use NAT Gateways in both your public and/or private subnets.?**  
+
+### Elastic IP. 
+![n5](n5.png?raw=true "n5")
+
+This will give us a known/constant IP address to use instead of a disposable or ever-changing IP address. This is important when you have applications that depend on a particular IP address. NatGateway1EIP uses this type for that very reason.  
+
+Use the DependsOn attribute to protect your dependencies from being created without the proper requirements. In the scenario above the **EIP allocation will only happen after the InternetGatewayAttachment has completed**.   
+
+## Routing
+![n6](n6.png?raw=true "n6")  
+
+Before we proceed ahead, let's understand two terms:  
+**Route table:** Routing is the action of applying rules to your network, VPC. A route table contains a set of rules. It blocks traffic from resources that do not follow the routing rule.   
+**Rules:** Rules define the network protocol, allowed IP addresses, and ports to allow the inbound and outbound traffic separately. A single rule is called an **AWS::EC2::Route** resource.  
+
+This section will create the following route tables (AWS::EC2::RouteTable) in our VPC and attach each of them to individual subnets, as mentioned below.  
+PublicRouteTable - This route table will have a default rule (AWS::EC2::Route) to allow all outbound traffic routed to the internet gateway. Next, we will attach this route table (AWS::EC2::SubnetRouteTableAssociation) to both our public subnets.  
+
+PrivateRouteTable1 - This route table will have a default rule (AWS::EC2::Route) to route all outbound traffic to the NAT gateway (NatGateway1). We will associate this route table to the PrivateSubnet1.  
+
+PrivateRouteTable2 - This route table is similar in nature to PrivateRouteTable1, except that it is routing the traffic to the NatGateway2, and will be attached to the PrivateSubnet2.  
+
+The flow of creating resources here will be: Create route tables → Add routes → Associate route table to subnets.  
+
+Create route tables in your VPC, and then add routes (rules) to each route table. Later, associate the route table with individual subnets.  
+
+The only required property for setting up a RouteTable is the VpcId.  
+The default public route: the wildcard address 0.0.0.0/0, we are saying for any IP address in the world, send it to the referenced GatewayId.  
+
+```
+DefaultPublicRoute: 
+      Type: AWS::EC2::Route
+      DependsOn: InternetGatewayAttachment
+      Properties: 
+          RouteTableId: !Ref PublicRouteTable
+          DestinationCidrBlock: 0.0.0.0/0
+          GatewayId: !Ref InternetGateway
+```
+The default private route can be defined as:  
+```
+DefaultPrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+        RouteTableId: !Ref PrivateRouteTable1
+        DestinationCidrBlock: 0.0.0.0/0
+        NatGatewayId: !Ref NatGateway1
+```
+
+
+### SubnetRouteTableAssociation
+![n7](n7.png?raw=true "n7")  
+
+In order to associate subnets with our route table, we will need to use a SubnetRouteTableAssociation resource.  
+
+This only takes two properties, which are the id's used for our RouteTable and our Subnet.  
+Important Note: Routes should be defined starting with the most specific rule and transitioning to the least specific rule.  
+
+
+## Outputs
+![n8](n8.png?raw=true "n8")  
+
+Outputs are optional but are very useful if there are output values you need to:   
+import into another stack  
+return in a response  
+view in AWS console  
+
+To declare an Output use the following syntax:  
+```
+Outputs:
+  Logical ID:
+    Description: Information about the value
+    Value: Value to return
+    Export:
+      Name: Value to export
+```
+The Value is required but the Name is optional. In the following example we are returning the id of our VPC as well as our Environment's Name:  
+```
+VPC: 
+    Description: A reference to the created VPC
+    Value: !Ref VPC
+    Export:
+        Name: !Sub ${EnvironmentName}-VPCID
+```
+
+### Join Function
+You can use the join function to combine a group of values. The syntax requires you provide a delimiter and a list of values you want appended.  
+
+In the following example we are using !Join to combine our subnets before returning their values:  
+```
+PublicSubnets:
+    Description: A list of the public subnets
+    Value: !Join [ ",", [ !Ref PublicSubnet1, !Ref PublicSubnet2 ]]
+    Export:
+        Name: !Sub ${EnvironmentName}-PUB-NETS
+```
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-<a href="https://www.lucidchart.com/" target="_blank">Lucid</a>

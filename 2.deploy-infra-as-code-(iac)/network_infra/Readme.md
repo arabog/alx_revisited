@@ -47,17 +47,49 @@ Practice fixing errors, as this will help you prepare for real scenarios on the 
 We have already created a CloudFormation template (network.yml) and a properties file (network-parameters.json) that contains the code related to provisioning the networking infrastructure.  
 
 The network.yml file contains four sections:  
-**Description ** It presents a text description.  
-Parameters - It contains the list of parameters that are being used in the current CloudFormation template. Parameters should be declared above your Resources. Any value that you consider to change in the future, put it as a parameter instead of hard-coding it into your script. Note that each parameter is further defined with the following properties (or fields):  
-Parameter Name - You can provide the name of your choice  
-Description - A textual value  
-Type - Identifies the data type of the parameter, such as String or a Number  
-Default (optional) - Presents the default value of the parameter  
-AllowedValues (optional) - Presents the list of all possible values.  
+**Description:** It presents a text description.  
+**Parameters:** It contains the list of parameters that are being used in the current CloudFormation template. Parameters should be declared above your Resources. Any value that you consider to change in the future, put it as a parameter instead of hard-coding it into your script. Note that each parameter is further defined with the following properties (or fields):  
+`Parameter Name` - You can provide the name of your choice  
+`Description` - A textual value  
+`Type` - Identifies the data type of the parameter, such as String or a Number  
+`Default` (optional) - Presents the default value of the parameter  
+`AllowedValues` (optional) - Presents the list of all possible values.  
 
 You can also provide default values for parameters in case one was not passed in. e.g VpcCIDR has a default value of 10.0.0.0/16.  
 
 The use of parameters in the template makes your CloudFormation templates more reusable, by allowing you to input custom values to your template each time you create or update a stack. These custom values can be defined in a separate JSON file. These parameters are referenced in the Resources and Outputs section using a !Ref intrinsic function.  
+`Reference:` !Ref  
+
+**Resources:** This (mandatory) section declares the AWS resources that you want to include in the stack, such as Servers, Gateways, VPN Connections, and more.  
+
+Each resource is defined with the help of fields, such as Name, Resource type, and Resource properties.  
+`Name` - It is a string value representing the resource name. You can use a name of your choice.  
+`Resource type` - The resource type identifies the type of resource that you are declaring. For example, Type: AWS::EC2::VPC creates a VPC.  
+`Resource properties` - The resource Properties field has further sub-fields that are specific to each type of resource.  
+
+**Outputs:** This section declares output values for each resource that you can import into other stacks. For example, you can output the VPC ID for a stack to make it easier to find from another stack/template. You should not output any sensitive information, such as passwords or secrets. For each resource's output, you will have to provide the following:  
+Description (optional) - A string  
+Value (required) - The property returned by the aws cloudformation describe-stacks command.  
+Export (optional) - The name of the resource output to be exported for a cross-stack reference.  
+
+**Why do we need a separate parameter file (JSON)?**  
+The separate parameter file (JSON) file helps us to avoid hard-coding the parameters in the template (YAML) file.  
+Any named parameters in the Parameters section of our CloudFormation template will need to have a matching value in a separate, Parameter file, which is in JSON format.   
+Having this additional file with actual parameter values allows you to change data used by your CloudFormation template without the risk of modifying the template directly and possibly introducing a typo or some logical error.  
+
+**How to execute the Shell scripts?**  
+You can run either of the shell scripts (create.sh or update.sh) as:
+./<file_name> argument_1 argument_2 argument_3  
+e.g: `./create.sh ourdemoinfra ourinfra.yml ourinfra.json`  
+
+**Troubleshoot**
+While running the AWS commands using either create.sh or update.sh file, if you face permission denied error, then you will have to grant the execute permission to the owner (yourself) explicitly as:  
+`chmod +x update.sh`   
+`chmod +x create.sh`   
+
+### Connecting VPC's & Internet Gateways
+Syntax of VPCGatewayAttachment resource: It's important to note when connecting an Internet Gateway to a VPC, we need to define an additional resource called InternetGatewayAttachment. This attachment references both the VPC and the InternetGateway.  
+
 
 
 

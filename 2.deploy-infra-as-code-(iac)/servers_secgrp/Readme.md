@@ -384,6 +384,6 @@ myLaunchTemplateVersionNumber:
 ## Adding Target Groups and Listeners
 What is a Load Balancer?  
 We learned earlier that a load-balancer automatically distributes incoming application traffic across multiple servers (EC2 instances). These servers need not essentially be present in a single subnet. They (servers) can span across numerous subnets in a given VPC. In our example, these servers are residing in the private subnets.  
-![n8](n8.png?raw=true "n8")  
+![n1](n1.png?raw=true "n1")  
 
 

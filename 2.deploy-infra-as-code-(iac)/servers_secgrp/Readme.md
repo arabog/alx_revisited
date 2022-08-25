@@ -1,10 +1,13 @@
 # Servers and Security Groups
 ## Lesson Objectives
 In particular, we will create the following resources using the CloudFormation template:  
-**Security groups** - Security group specify firewall rules. We will create two of them, one for a load-balancer and another for a web server.  
-**AutoScaling group** - An autoscaling group ensures that a desired number of servers (EC2 instances) are always up and running. If an instance goes down due to any reason, such as bad health, a substitute instance with a similar configuration will spin up automatically.  
+**Security groups** - Security group specify firewall rules. We will create two of them, one for `a load-balancer` and another for `a web server (instance)`.  
+
+**AutoScaling group** - An autoscaling group ensures that a desired number of servers (EC2 instances) are always up and running. If an instance goes down due to any reason, such as bad health, a substitute instance with a similar `configuration (eida launch configuration or template configuration)` will spin up automatically.  
+
 **Launch configuration** - The configuration of the EC2 instance that spins up automatically, if required, as a part of autoscaling group resides in a launch configuration.  
-**Load balancer** - A load balancer distributes the incoming traffic uniformly across multiple servers (target group) within the same or different AZs. We will also create a listener and target group for the load balancer.  
+
+**Load balancer** - A load balancer distributes the incoming traffic uniformly across multiple servers (**target group**) within the same or different AZs. We will also create **a listener** and **target group** for the load balancer.  
 
 ## Setting Up Our Environment
 The servers.yml file defines various resources, such as `security groups`, an `autoscaling group`, `launch configuration`, `target group`, `load balancer`, and `listener`. Each type of resource has a different set of properties.  
@@ -15,37 +18,34 @@ WebServerSecGroup for the webserver
 LBSecGroup for a load balancer  
 
 ### Security Group Syntax
-The following is the syntax required to create a   
+The following is the syntax required to create a security group   
 ```
 SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties: 
-    GroupDescription: String
-    GroupName: String
-    SecurityGroupEgress: 
-        - Egress
-    SecurityGroupIngress: 
-        - Ingress
-    Tags: 
-        - Tag
-    VpcId: String
+        GroupDescription: String
+        GroupName: String
+        SecurityGroupEgress: 
+            - Egress
+        SecurityGroupIngress: 
+            - Ingress
+        Tags: 
+            - Tag
+        VpcId: String
 ```
 In the SecurityGroup syntax shown above:  
 The only required (mandatory) property is GroupDescription. It is a String value up to 255 characters without quotes.  
-
 The GroupName is similar to GroupDescription, but it's not a required property.  
-
 The `SecurityGroupEgress` and `SecurityGroupIngress` property rules are the most critical as it defines where the traffic will go. The former defines outbound traffic, whereas the latter defines the inbound traffic.  
-
 The VpcId denotes the VPC ID in which you are creating the Security Group.  
 
-Ingress rules and egress rules  
+**Ingress rules and egress rules**  
 Ingress rules are for inbound traffic, and egress rules are for outbound traffic.  
 Ingress rules restrict or allow traffic trying to reach our resources on specific ports.  
-Egress rules restrict or allow traffic originating from our server -- typically we are ok allowing all outbound traffic without restrictions as this doesn’t pose a risk for a security breach.  
+Egress rules restrict or allow traffic originating from our server -- **typically we are ok allowing all outbound traffic without restrictions as this doesn’t pose a risk for a security breach.**  
 
 ### Example
-The security group below with ingress/egress rules allowing traffic on port 80 using TCP protocol from/to any location:  
+The security group below with ingress/egress rules **allowing traffic on port 80** using TCP protocol **from/to any location/anywhere**:  
 ```
 InstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -53,11 +53,13 @@ InstanceSecurityGroup:
         GroupDescription: Allow http to client host
         VpcId:
             Ref: myVPC
+
         SecurityGroupIngress:
         - IpProtocol: tcp
             FromPort: 80
             ToPort: 80
             CidrIp: 0.0.0.0/0
+
         SecurityGroupEgress:
         - IpProtocol: tcp
             FromPort: 80
@@ -66,11 +68,10 @@ InstanceSecurityGroup:
 ```
 
 By default Security Groups provide the following to the resources to which they are assigned:  
-
 **Inbound: Deny All, Outbound: Allow All**  
 
 Security group entries in CloudFormation can have:  
-IP address or range  
+IP address or range (CIDR?)  
 Start port  
 End port  
 Rule type(Ingress or egress)  
@@ -78,14 +79,11 @@ Rule type(Ingress or egress)
 ## Security Groups
 Security groups are specific to individual resources (EC2 servers, databases) and not to subnets. There are few points that you must remember:  
 
-Traffic is blocked by default  
-In the cloud, traffic is completely blocked, so you have to explicitly open ports to allow traffic in and out. This is a general networking concept.  
+**Traffic is blocked by default:** In the cloud, traffic is completely blocked, so you have to explicitly **open ports** to allow traffic in and out. This is a general networking concept.  
 
-Limit inbound traffic for security  
-For ingress rules, we want to limit inbound traffic, for security, to a single port or just a handful of ports required by the application we are running. For example, if it’s a public web server, it will require port 80 open to the world ( World = 0.0.0.0/0 ). Should you need the SSH port open, restrict this port only to your specific IP address.  
+**Limit inbound traffic for security:** For ingress rules, we want to limit inbound traffic, for security, to a single port or just a handful of ports required by the application we are running. For example, if it’s a public web server, it will require port 80 open to the world (World = 0.0.0.0/0). **Should you need the SSH port open, restrict this port only to your specific IP address**.  
 
-For outbound traffic, give full access  
-For egress rules, we want to give the resource full access to the internet, so we give egress access to all ports, from 0 all the way to 65535.  
+**For outbound traffic, give full access** For egress rules, we want to give the resource full access to the internet, so we give egress access to all ports, from 0 all the way to 65535. (This means port ranges from 0 to 65535 which port 80 and port 8080 belongs to).      
 
 ```
 WebServerSecGroup:
@@ -95,11 +93,13 @@ WebServerSecGroup:
     VpcId:
         Fn::ImportValue:
         !Sub "${EnvironmentName}-VPCID"
+
     SecurityGroupIngress:
     - IpProtocol: tcp
         FromPort: 8080
         ToPort: 8080
         CidrIp: 0.0.0.0/0
+
     <!-- to access d server and kindly remove bf deployment -->
     - IpProtocol: tcp
         FromPort: 22
@@ -113,13 +113,12 @@ WebServerSecGroup:
         CidrIp: 0.0.0.0/0
 ```
 ### Intrinsic functions in the CloudFormation template  
-AWS provides a few predefined functions that you can use in your template. These functions can assign values to properties that are not available until runtime. Notice that there a few function-calls in the template (servers.yml) provided to you, such as:  
+AWS provides a few predefined functions that you can use in your template. These functions can assign values to properties that are not available until runtime. Notice that there are few function-calls in the template (servers.yml) provided to you, such as:  
 
-Fn::Sub: This function substitutes value to a property at runtime. You can use this function as !Sub "$Value". For example, the !Sub "${EnvironmentName}-VPCID" will substitute the value of EnvironmentName parameter during runtime.  
+**Fn::Sub:** This function substitutes value to a property at runtime. You can use this function as `!Sub "$Value"`.  
+For example, the !Sub "${EnvironmentName}-VPCID" will substitute the value of EnvironmentName parameter during runtime. Exporting d value of a VPC ("${EnvironmentName}-VPCID") from the network.yml stack. Note that the value of EnvironmentName parameter will be substituted at runtime.  
 
-Exporting a value of a VPC ("${EnvironmentName}-VPCID") from the ourdemoinfra stack. Note that the value of EnvironmentName parameter will be substituted at runtime.  
-
-Fn::GetAZs: This function returns an array that lists Availability Zones for a specified region in alphabetical order. For example, we learned the following code in the last lesson where we are fetching the list of AZs.  
+**Fn::GetAZs:** This function returns an array that lists Availability Zones for a specified region in alphabetical order. For example, we learned the following code in the last lesson where we are fetching the list of AZs.  
 ```
  PublicSubnet1: 
      Type: AWS::EC2::Subnet
@@ -132,11 +131,11 @@ Fn::GetAZs: This function returns an array that lists Availability Zones for a s
              - Key: Name 
                Value: !Sub ${EnvironmentName} Public Subnet (AZ1)
 ```
-The example above shows the usage of three more intrinsic functions, !Sub, !Select and !Ref.  
+The example above shows the usage of three more intrinsic functions, `!Sub`, `!Select` and `!Ref`.  
 
-Fn::Select: This function returns a single object from a list of objects by index.  
-Ref: It returns the value of the specified parameter or resource. You can specify a parameter or a resource by its logical name.
-Fn::ImportValue: This function returns the value of an output exported by another stack.  
+**Fn::Select:** This function returns a single object from a list of objects by index.  
+**Ref:** It returns the value of the specified parameter or resource. You can specify a parameter or a resource by its logical name.
+**Fn::ImportValue:** This function returns the value of an output exported by another stack.  
 
 For example, in the last lesson, we created ourdemoinfra stack having a VPC and declared its output value.
 Recall that the Outputs section in a template declares output values that you can import into another stack.  

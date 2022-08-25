@@ -156,9 +156,7 @@ If the CPU utilization comes down below a certain lower threshold, then one of t
 ## Launch configuration
 Note that all the EC2 instances running as a part of an autoscaling group share a common configuration, such as AMI, instance-type, security-group, key pair, etc. All these configurations are saved in a separate resource, called **Launch configuration**.  
 Think of a Launch Configuration as a template or a recipe. You are instructing the Auto Scaling service HOW to run your web application(that what to include when starting a new instance(s)).  
-
-Note: AWS provides another option, Launch templates, as an alternative to the Launch configuration. They both serve a similar purpose.  
-
+Note: AWS provides another option, **Launch templates**, as an alternative to the Launch configuration. They both serve a similar purpose.  
 Writing YAML code for either of them is similar in syntax. We will learn to code Launch configuration in this lesson, though.  
 
 An autoscaling group in our example exercise will require the following:  
@@ -184,13 +182,13 @@ WebAppGroup:
         HealthCheckType: ELB
 ```
 In the code above:  
-The VPCZoneIdentifier is a list of subnet IDs for a virtual private cloud (VPC) where instances in the Auto Scaling group can be created. We are using the private subnets.  
-The LaunchConfigurationName represents the name of the launch configuration to use to launch instances.  
+The `VPCZoneIdentifier` is a list of subnet IDs for a virtual private cloud (VPC) where instances in the Auto Scaling group can be created. We are using the private subnets.  
+The `LaunchConfigurationName` represents the name of the launch configuration to use to launch instances.  
+The `MinSize & MaxSize` lets us know the range of machines we will be running, which also alerts us to the min/max costs we can be expecting from these machines.  
 
-The MinSize & MaxSize lets us know the range of machines we will be running, which also alerts us to the min/max costs we can be expecting from these machines.  
-A target group is a group of registered instances, to whom the traffic will be routed. The ARN (Amazon Resource Names) serves as a unique ID for any resource. The TargetGroupARNs property refers to the ARNs of the load balancer target group that we will create   
+A target group is **a group of registered instances**, to whom the traffic will be routed. The ARN (Amazon Resource Names) serves as a unique ID for any resource. The TargetGroupARNs property refers to the ARNs of the load balancer target group that we will create   
 
-Which of these are elements of an autoscaling group?  
+Q: Which of these are elements of an autoscaling group?  
 Scaling Policy  
 Launch Configuration  
 
@@ -223,17 +221,12 @@ Resources:
           VolumeSize: '10'
 ```
 In the example above, we have done the following:  
-Set a UserData script that will run on the new instance automatically after launch.  
-
-Used the ami-0ac73f33a1888c64a as AMI in the us-west-2 (Oregon) region. If you wish to run the whole exercise in another region, say us-east-1 (N Virginia), then you will have to change the AMI ID to ami-00ddb0e5626798373  
-
-Assumed that the RSA login key name is VocareumKey2. Please create a key-pair with the name VocareumKey2 (or any name) in the AWS web console (under EC2 services) before using it in the code above.    
-
-Referenced the previously defined WebServerSecGroup for our SecurityGroup  
-
-Set our InstanceType to t3.small . You can also use t3.medium.  
-
-Specified 10gbs for our VolumeSize.  
+Set a **UserData script** that will run on the new instance automatically after launch.  
+Used the **ami-0ac73f33a1888c64a** as AMI in the **us-west-2** (Oregon) region. If you wish to run the whole exercise in another region, say us-east-1 (N Virginia), then you will have to change the AMI ID to ami-00ddb0e5626798373  
+Assumed that the RSA login key name is **VocareumKey2**. Please create a key-pair with the name VocareumKey2 (or any name) in the AWS web console (under EC2 services) before using it in the code above.    
+Referenced the previously defined **WebServerSecGroup** for our SecurityGroup  
+Set our InstanceType to **t3.small** . You can also use t3.medium.  
+Specified **10gbs** for our VolumeSize.  
 
 Note: In a Launch configuration, the only required properties are ImageId and Instance Type. The remaining ones are optional.  
 

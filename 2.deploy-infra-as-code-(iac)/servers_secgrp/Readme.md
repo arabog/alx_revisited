@@ -134,21 +134,19 @@ For example, the !Sub "${EnvironmentName}-VPCID" will substitute the value of En
 The example above shows the usage of three more intrinsic functions, `!Sub`, `!Select` and `!Ref`.  
 
 **Fn::Select:** This function returns a single object from a list of objects by index.  
-**Ref:** It returns the value of the specified parameter or resource. You can specify a parameter or a resource by its logical name.
-**Fn::ImportValue:** This function returns the value of an output exported by another stack.  
+**Ref:** It returns the value of the specified parameter or resource. You can specify a parameter or a resource by its logical name.  
+**Fn::ImportValue:** This function returns the value of an output exported by another stack. E.g Outputs from network.yml file into the servers.yml file.   
 
-For example, in the last lesson, we created ourdemoinfra stack having a VPC and declared its output value.
-Recall that the Outputs section in a template declares output values that you can import into another stack.  
+For example, in the last lesson, we created network stack having a VPC and declared its output value. Recall that the Outputs section in a template declares output values that you can import into another stack.  
 
 ## Autoscaling Group
-An Autoscaling group is a logical group of EC2 instances that share a similar configuration.  
-
+An Autoscaling group is a logical **group of EC2 instances that share a similar configuration.**  
 This AWS service monitors the EC2 instances and automatically adjusts the running count by adding/removing EC2 instances, ensuring that a desired number of servers (EC2 instances) are always up and running.  
 
 ### Scaling policy
-A Scaling Policy is the criteria used to decide when to Add or Remove Servers from your Auto Scaling Group. Running the servers 24 hours a day costs money. So, It's best to have criteria/conditions, called Scaling policy, that will turn those servers off when they are not needed and then turn them back on demand.  
+A Scaling Policy is the criteria used to decide when to Add or Remove Servers from your Auto Scaling Group. Running the servers 24 hours a day costs money. So, It's best to have criteria/conditions, called Scaling policy, that will turn those servers off when they are not needed and then turn them back on, on demand.  
 
-For example, you could create a CloudWatch Alarm with a custom metric that counts the number of web visitors in the last 2 hours; if the number is less than 100, perhaps a single server is enough. This will be a trigger to Scale Down if there is more than one server running at the time.  
+For example, you could create a `CloudWatch Alarm` with a custom metric that counts the number of web visitors in the last 2 hours; if the number is less than 100, perhaps a single server is enough. This will be a trigger to Scale Down if there is more than one server running at the time.  
 
 A Scaling policy spins up/shuts down EC2 instances automatically based on certain conditions that we specify, such as:  
 If an instance goes down due to any reason, such as bad health  
@@ -156,7 +154,8 @@ If an instance achieves a CPU utilization upper threshold, say 90%
 If the CPU utilization comes down below a certain lower threshold, then one of the instances will be shut down automatically  
 
 ## Launch configuration
-Note that all the EC2 instances running as a part of an autoscaling group share a common configuration, such as AMI, instance-type, security-group, key pair, etc. All these configurations are saved in a separate resource: Launch configuration. Think of a Launch Configuration as a template or a recipe. You are instructing the Auto Scaling service HOW to run your web application.  
+Note that all the EC2 instances running as a part of an autoscaling group share a common configuration, such as AMI, instance-type, security-group, key pair, etc. All these configurations are saved in a separate resource, called **Launch configuration**.  
+Think of a Launch Configuration as a template or a recipe. You are instructing the Auto Scaling service HOW to run your web application(that what to include when starting a new instance(s)).  
 
 Note: AWS provides another option, Launch templates, as an alternative to the Launch configuration. They both serve a similar purpose.  
 

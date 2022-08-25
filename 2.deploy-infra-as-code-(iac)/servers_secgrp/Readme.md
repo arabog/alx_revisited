@@ -231,10 +231,9 @@ Specified **10gbs** for our VolumeSize.
 Note: In a Launch configuration, the only required properties are ImageId and Instance Type. The remaining ones are optional.  
 
 ## UserData script
-A UserData script is a series of commands that run automatically at the time of instantiating your EC2 instance. The purpose of a UserData script is to properly configure the EC2 instance before running your application.
+A UserData script is a **series of commands** that run automatically at the time of instantiating/starting your EC2 instance. The purpose of a UserData script is to properly configure the EC2 instance before running your application.
 
-Script to use in your exercise  
-Script to use in your exercise
+### Script to use in your exercise
 By default, the EC2 instance will not have the Apache Tomcat server installed and running. Use the following UserData script to do so. **Note that this script is meant to run only on Ubuntu Linux systems.**   
 ```
       #!/bin/bash
@@ -246,26 +245,24 @@ By default, the EC2 instance will not have the Apache Tomcat server installed an
 ```
 It will first install the Apache Tomcat server, starting the server, and then create an index.html page at the default location, /var/www/html.  
 
-Script shown in the demo is different  
-The instructor uses a slightly different UserData script in the demo video above that uses external dependencies, such as installing a Docker and then installing the Apache Tomcat in a Docker container.  
+### Script shown in the demo is different  
+The instructor uses a slightly different UserData script in the demo video that uses external dependencies, such as installing a Docker and then installing the Apache Tomcat in a Docker container.  
 ```
-       #!/bin/bash
-       # Install docker
-       apt-get update
-       apt-get install -y apt-transport-https ca-certificates curl software-properties-common
-       curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-       add-apt-repository \
-       "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-       $(lsb_release -cs) \
-       stable"
-       apt-get update
-       apt-get install -y docker-ce
-       usermod -aG docker ubuntu
-       docker run -p 8080:8080 tomcat:8.0
+    #!/bin/bash
+    # Install docker
+    apt-get update
+    apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    add-apt-repository \
+    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+    $(lsb_release -cs) \
+    stable"
+    apt-get update
+    apt-get install -y docker-ce
+    usermod -aG docker ubuntu
+    docker run -p 8080:8080 tomcat:8.0
 ```
-**You can use either of the scripts mentioned above. Note that the scripts above are valid only for an Ubuntu VM.**  
-
-User data script can also be included while launching an EC2 instance in the web console.  
+**You can use either of the scripts mentioned above. Note that the scripts above are valid only for an Ubuntu VM.** User data script can also be included while launching an EC2 instance in the web console.  
 
 ### What else you can do with a UserData script?
 In addition to the example shown above, you can also do things such as:  
@@ -296,6 +293,97 @@ sudo chkconfig httpd on
 **The AMI ID varies for each region, and updates periodically.**  
 
 ## Debugging Launch Configuration
+**WebAppGroup**  
+An Auto Scaling Group is in charge of providing servers for your application based on an Alarm/Criteria, such as number of concurrent users, CPU Usage or HTTP Requests  
+**Since The Auto Scaling Group is not specific to your application**, you need to provide a **Launch Configuration** which says which `machine image` to use and how much `memory and disk space` your application will need, among other things.  
+You can specify a Minimum and Maximum count of servers to use for Auto Scaling -- This is a great feature of cloud that can save you lots of money in unused infrastructure and it’s a key example of the elasticity of the cloud.  
 
+Q: Should a server in your auto-scaling group fail, you would...  
+Destroy the server and let the auto-scaling group create a new, fresh server  
+
+## Launch Templates
+Previously, we learned that an autoscaling group in our example exercise requires the following:  
+VPCZoneIdentifier  
+**LaunchConfigurationName**  
+Min and Max count of instances  
+TargetGroupARNs  
+
+But, you can also use a Launch Template instead of a Launch Configuration. Let's understand how to code an AWS::EC2::LaunchTemplate from AWS::EC2::LaunchConfiguration.  
+
+Notice that a **AWS::AutoScaling::LaunchConfiguration** comprises the following two section:
+```
+WebAppLaunchConfig:
+  Type: AWS::AutoScaling::LaunchConfiguration
+  Properties:
+```
+On the other hand, a **AWS::EC2::LaunchTemplate** has the following sections:
+```
+WebAppLaunchTemplate:
+   Type: AWS::EC2::LaunchTemplate
+   Properties: 
+       LaunchTemplateName: 
+       LaunchTemplateData:
+```
+In other words, a LaunchTemplate comprises of two main components: LaunchTemplateName and LaunchTemplateData. The LaunchTemplateName is optional, and LaunchTemplateData will have the detailed configuration.  
+
+The content of the LaunchTemplateData can have various fields and values. However, in our example, the content of the LaunchConfiguration → Properties is similar to the LaunchTemplate → LaunchTemplateData section. The analogous LaunchTemplate will be:
+```
+myWebAppLaunchTemplate:
+ Type: AWS::EC2::LaunchTemplate
+ Properties: 
+
+   LaunchTemplateData:
+     UserData:
+       Fn::Base64: !Sub |
+         #!/bin/bash
+         apt-get update -y
+         apt-get install apache2 -y
+         systemctl start apache2.service
+         cd /var/www/html
+         echo "Udacity Demo Web Server Up and Running!" > index.html
+
+     ImageId: ami-005bdb005fb00e791
+     KeyName: VocareumKey2
+     SecurityGroupIds:
+       - sg-020ac9d8f54335c66
+     InstanceType: t3.small
+     BlockDeviceMappings:
+     - DeviceName: "/dev/sdk"
+       Ebs:
+         VolumeSize: '10'
+```
+In the Launch template above, notice the following important points:  
+It is almost similar to a Launch configuration.  
+It must be defined prior to defining the AutoScalingGroup.  
+We already had a user key-pair with the name VocareumKey2 in our account. You can use the one you have.  
+In the SecurityGroupIds field, we have used a hard-coded value of the web server SecurityGroup we created earlier. It is because, **in a nondefault VPC, AWS doesn't allow us to use the SecurityGroups field. Instead, we must use security group IDs**. Therefore, replace the sg-020ac9d8f54335c66 with the one applicable to you.  
+
+Lastly, change the autoscaling group to use the new LaunchTemplate as:
+```
+WebAppGroup:
+ Type: AWS::AutoScaling::AutoScalingGroup
+ Properties:
+   VPCZoneIdentifier:
+   - Fn::ImportValue: 
+       !Sub "${EnvironmentName}-PRIV-NETS"
+   LaunchTemplate:
+     LaunchTemplateId: !Ref myWebAppLaunchTemplate
+     Version: !Ref myLaunchTemplateVersionNumber
+   MinSize: '3'
+   MaxSize: '5'
+   TargetGroupARNs:
+   - Ref: WebAppTargetGroup
+```
+In the LaunchTemplate field above, both the LaunchTemplateId and Version are mandatory to be specified. Therefore, you may have to create a new parameter myLaunchTemplateVersionNumber as shown below:
+```
+myLaunchTemplateVersionNumber:
+    Type: String
+    Default: 1
+```
+
+## Adding Target Groups and Listeners
+What is a Load Balancer?  
+We learned earlier that a load-balancer automatically distributes incoming application traffic across multiple servers (EC2 instances). These servers need not essentially be present in a single subnet. They (servers) can span across numerous subnets in a given VPC. In our example, these servers are residing in the private subnets.  
+![n8](n8.png?raw=true "n8")  
 
 

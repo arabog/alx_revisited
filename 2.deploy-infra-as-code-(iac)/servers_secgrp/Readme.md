@@ -382,8 +382,192 @@ myLaunchTemplateVersionNumber:
 ```
 
 ## Adding Target Groups and Listeners
-What is a Load Balancer?  
+**What is a Load Balancer?**  
 We learned earlier that a load-balancer automatically distributes incoming application traffic across multiple servers (EC2 instances). These servers need not essentially be present in a single subnet. They (servers) can span across numerous subnets in a given VPC. In our example, these servers are residing in the private subnets.  
 ![n1](n1.png?raw=true "n1")  
 
+**A load balancer is not exactly a part of Auto Scaling.** Still, it helps answer the question: "If I am running a web application in 20 different servers, how do I set up a single point of entry that guarantees an even workload distribution across all 20 servers?" The answer is a load balancer.  
+
+A load balancer allows you to reduce your Autoscaling down to 1 server at night when very few people are using your web application, and then Scale up to 10 or more servers during the day, when hundreds or thousands may be using it. The user doesn't experience any difference in availing of the services due to auto-scaling.  
+
+## What is a Listener and Listener Rule?
+A load balancer requires a listener. A listener is a process that **checks for connection requests using the protocol and port** that you specify in your code. In comparison, a listener rule determines h**ow the load balancer routes request** to the registered targets.  
+
+## What is a Target Group?
+A target group is a logical group of EC2 instances spanning across numerous subnets in a given VPC. You must explicitly register an EC2 instance with a target group, after which it will be called a target. In our example, the autoscaling group manages all EC2 instances in the target group, meaning it will automatically add/remove the instances to/from the target group.  
+
+![n2](n2.png?raw=true "n2")  
+
+## Relationship between Target Groups and Auto Scaling groups.
+A load balancer is a device that simply forwards traffic, evenly across a group of servers, known as a Target Group.
+The problem is, we can’t specifically name those servers, because if they are part of an Auto Scaling group, this means that they can come and go as demand for your application increases or decreases.  
+
+The way around this is, using the TargetGroupARNs property of the Auto Scaling group, we can automatically associate any new servers and remove discarded servers from the Target group automatically by simply including the Resource Name (ARN) of our Load Balancer’s target group in this property of our Auto Scaling Group. This way, the Load Balancer will always know where to send the traffic.  
+
+## AWS::ElasticLoadBalancingV2::TargetGroup
+Health Checks are the requests your Application Load Balancer sends to its registered targets. These periodic requests test the status of these targets. You can see us defining our Health Check properties in the code below:
+```
+  WebAppTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 8
+      HealthyThresholdCount: 2
+      Port: 8080
+      Protocol: HTTP
+      UnhealthyThresholdCount: 5
+      VpcId: 
+        Fn::ImportValue:
+          Fn::Sub: "${EnvironmentName}-VPCID"
+```
+In the above example we specify the following:  
+The port where our targets receive traffic - Port: 80  
+The protocol the load balancer uses when performing health checks on targets - HealthCheckProtocol: HTTP  
+The time it takes to determine a non-responsive target is unhealthy - HealthCheckIntervalSeconds: 10  
+The number of healthy/unhealthy checks required to change the health status - HealthyThresholdCount: 2 UnhealthyThresholdCount: 5  
+
+The healthy threshold represents the number of consecutive health check successes required before considering an unhealthy target healthy. An unhealthy threshold shows the number of consecutive health check failures required before considering a target unhealthy.  
+
+**Target group is the association between AutoScaling and Load balancer**  
+
+## AWS::ElasticLoadBalancingV2::LoadBalancer
+Our load balancer will be present in the public subnet, and use the dedicated security group we created earler. The code will look like:
+```
+  WebAppLB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Subnets:
+      - Fn::ImportValue: !Sub "${EnvironmentName}-PUB1-SN"
+      - Fn::ImportValue: !Sub "${EnvironmentName}-PUB2-SN"
+      SecurityGroups:
+      - Ref: LBSecGroup
+```
+AWS::ElasticLoadBalancingV2::Listener
+The listener to attach to our load balancer will be:
+```
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn:
+          Ref: WebAppTargetGroup
+      LoadBalancerArn:
+        Ref: WebAppLB
+      Port: '80'
+      Protocol: HTTP
+```
+It will check for the load balancer's connection requests on the HTTP protocol port 80 directed towards the target group.  
+
+## AWS::ElasticLoadBalancingV2::ListenerRule
+A Listener requires a Listener Rule. The Listener Rule below will determine how (condition) the load balancer's connection requests are routed to the registered targets.
+```
+ALBListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+    Actions:
+    - Type: forward
+        TargetGroupArn: !Ref 'WebAppTargetGroup'
+    Conditions:
+    - Field: path-pattern
+        Values: [/]
+    ListenerArn: !Ref 'Listener'
+    Priority: 1
+```
+
+The above listener rule will route all connection requests with the default root (/) endpoint to the specified target group.
+
+`Had our application served two different API endpoints, we could have created a dedicated target group for each API endpoint. The listener rule will correspondingly route the first endpoint's connection requests to one target group and the requests for other endpoints to the second target group.`  
+
+Note that you will have to change the AMI ID and the user key-pair name if you switch to anoda region.  
+
+## Debugging Our Security Group
+### Load Balancer Group
+```
+In/Out Rule	        Type	Protocol	Port	Source
+Inbound	            HTTP	TCP	        80	    0.0.0.0/0
+Outbound	        HTTP	TCP	        80	    0.0.0.0/0
+                Custom TCP	TCP	        8080	0.0.0.0/0
+```
+### Webserver Security Group
+```
+In/Out Rule	        Type	Protocol	Port	Source
+Inbound	        Custom TCP	TCP	        8080	0.0.0.0/0
+                    SSH	    TCP	        22	    0.0.0.0/0
+Outbound	       All TCP	TCP	     0-65535	0.0.0.0/0
+```
+How do I attach backend instances with private IP addresses to my internet-facing load balancer in ELB?  
+https://aws.amazon.com/premiumsupport/knowledge-center/public-load-balancer-private-ec2/  
+
+
+access the private server using application load balancer.
+https://www.youtube.com/watch?v=9Ut0cEWV9NQ
+
+## Connect to private servers via a Jumpbox
+### Demo - Accessing Servers in a Private Subnet via Jump Box
+
+### What is a Jumpbox?
+These are the EC2 instances in the public subnet with required access to the private subnets' servers. Generally, we would not want our private servers to be discoverable by anyone outside the VPC. However, we want to access those private servers from the Internet. It is made possible by using a Jumpbox (also called as Bastion Host). It is important to note that the security group attached to the private servers must allow the IP address of the public Jumpbox to connect to it.  
+
+![n3](n3.png?raw=true "n3")  
+
+### Create a Jumpbox
+In the demo video above, the instructor shows creating a new key-pair, jumpbox-key.pem. However, you can use an existing key-pair if available. Remember that key-pairs are specific to an AWS region. Also, the VPC you have to choose while launching the Jumpbox must be the same one in which you have been creating Cloudformation stacks.  
+Here is the summary of the Jumpbox configuration:  
+```
+Stage	Configuration	            Value
+1.	    Amazon Machine Image (AMI)	Amazon Linux 2 AMI (HVM), SSD Volume Type Note: You have chosen a Free Tier Eligible AMI
+2.	    Instance Type	            t2.micro
+3.	    Configure Instance Details	
+        a. Number of Instances	    1
+        b. Network	                Select the VPC that you created in the previous step
+        c. Subnet	                Public
+        d. Auto-assign Public IP	Enable
+4.	    Storage	                    Default
+5.	    Tags	                    Name:Jumpbox
+6.	    Security Group	            Create a new security group. Add rule to allow SSH type connection on default port 22 from your IP as source
+```
+Once the Jumpbox is up and running, you can connect to it using SSH protocol.  
+
+### Connect to the Jumpbox
+Since the Jumpbox is a Linux machine, therefore you will have to use SSH protocol to connect to it. Remember that the flow of connection will be  
+**Your local computer (Mac/Windows/Linux) → Jumpbox(CentOS Linux) → Private servers (Ubuntu Linux).**
+
+### Test the Jumpbox
+Recall that the instructor has the following two different login keys: 1). jumpbox-key.pem for the Jumpbox and 2). private-server-devops-key.pem for the private servers. Let's test if you are able to connect to the private servers via a Jumpbox:  
+1. Copy the public IP address of the Jumpbox, say 3.17.80.159  
+2. Copy and paste the private servers' login key file from your local computer to the Jumpbox. Run the following command from your local terminal (replace the file names and the IP address as applicable to you):  
+```
+scp -i jumpbox-key.pem private-server-devops-key.pem ec2-user@3.17.80.159:/home/ec2-user/private-server-devops-key.pem
+```
+3. SSH login to the Jumpbox:  
+```
+ssh ec2-user@3.17.80.159 -i jumpbox-key.pem
+```
+4. Copy the private IP address of any private server, say 10.0.2.74.
+
+5. Once you are logged into the Jumpbox, confirm if you have the private-server-devops-key.pem key available in the home directory, and then change the access-mode of the key file. Later, try to SSH login to the private server:  
+```
+ls
+# you must see the private-server-devops-key.pem file
+chmod 400 private-server-devops-key.pem
+ssh -i "private-server-devops-key.pem" ubuntu@10.0.2.74
+```
+Recall that the default user name for a Linux system is ec2-user and for an Ubuntu system is ubuntu.
+
+6. Lastly, check the status of the running web server in the private instance
+```
+service apache2 status
+```
+Similarly, you can SSH login to the second private server from the Jumpbox. You have to replace the private IP address of the second server in the commands above.  
+
+
+
+
+
+
+![n2](n2.png?raw=true "n2")  
+![n2](n2.png?raw=true "n2")  
 

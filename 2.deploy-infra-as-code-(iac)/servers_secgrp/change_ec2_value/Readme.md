@@ -1,0 +1,1 @@
+Using the AWS CLI Tool, store and retrieve parameters from the EC2 Parameter Store. Play around with changing the value from the EC2 Console and not just the CLI Tool.
